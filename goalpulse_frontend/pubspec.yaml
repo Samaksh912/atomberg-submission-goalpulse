@@ -1,0 +1,45 @@
+name: goalpulse_frontend
+description: "GoalPulse — Enterprise Goal Setting & Tracking Portal"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.7.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State Management
+  flutter_riverpod: ^2.4.0
+
+  # Routing
+  go_router: ^12.0.0
+
+  # Firebase
+  firebase_core: ^3.6.0
+  firebase_auth: ^5.3.0
+  cloud_firestore: ^5.4.0
+
+  # Networking
+  dio: ^5.4.0
+
+  # Charts
+  fl_chart: ^0.65.0
+
+  # UI / Design
+  google_fonts: ^6.1.0
+  flutter_animate: ^4.3.0
+  data_table_2: ^2.5.10
+
+  # Utilities
+  intl: ^0.18.0
+  shared_preferences: ^2.2.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true

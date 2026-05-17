@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "70165945558",
+    "project_id": "goalpulse-38583",
+    "storage_bucket": "goalpulse-38583.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:70165945558:android:a31bd1a36a482ecef1bd77",
+        "android_client_info": {
+          "package_name": "com.example.goalpulse"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyByqfpDdBXab9niR2jmcaQo_ja_TegkggA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
