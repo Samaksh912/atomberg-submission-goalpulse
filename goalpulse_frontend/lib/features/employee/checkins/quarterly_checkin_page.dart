@@ -12,6 +12,7 @@ import '../../../widgets/empty_state_widget.dart';
 import '../../../widgets/toast_notification.dart';
 import '../goals/goals_provider.dart';
 import 'checkin_provider.dart';
+import 'widgets/ai_summary_widget.dart';
 
 /// Employee quarterly check-in page — log actuals and see progress scores.
 class QuarterlyCheckinPage extends ConsumerStatefulWidget {
@@ -294,35 +295,11 @@ class _QuarterlyCheckinPageState extends ConsumerState<QuarterlyCheckinPage> {
                                 ),
                               ),
                             if (_alreadySubmitted) ...[
-                              const SizedBox(height: 8),
-                              SizedBox(
-                                width: double.infinity,
-                                child: OutlinedButton.icon(
-                                  onPressed: () {
-                                    ScaffoldMessenger.of(context)
-                                        .showSnackBar(const SnackBar(
-                                      content: Text(
-                                          '✨ AI Summary generation coming in Phase 10'),
-                                    ));
-                                  },
-                                  icon: const Icon(Icons.auto_awesome,
-                                      size: 16),
-                                  label:
-                                      const Text('Generate AI Summary'),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor:
-                                        AppColors.kBrandSecondary,
-                                    side: BorderSide(
-                                      color: AppColors.kBrandSecondary
-                                          .withValues(alpha: 0.4),
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 14),
-                                    shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(10)),
-                                  ),
-                                ),
+                              const SizedBox(height: 16),
+                              // ── AI Summary ──────────────────────────
+                              _AiSummarySection(
+                                sheet: _sheet,
+                                quarter: _activeQuarter,
                               ),
                             ],
                           ],
@@ -605,4 +582,39 @@ class _ActualEntry {
   final dynamic actual;
   final String status;
   final double score;
+}
+
+// ── AI Summary Section ────────────────────────────────────────────────────────
+
+/// Fetches the submitted check-in record ID for the current quarter,
+/// then renders [AiSummaryWidget] with it.
+class _AiSummarySection extends ConsumerWidget {
+  const _AiSummarySection({
+    required this.sheet,
+    required this.quarter,
+  });
+
+  final GoalSheet? sheet;
+  final String quarter;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (sheet == null) return const SizedBox.shrink();
+
+    final checkinsAsync = ref.watch(checkinsByGoalProvider(sheet!.id));
+    return checkinsAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (checkins) {
+        final submitted =
+            checkins.where((c) => c.quarter == quarter).firstOrNull;
+        if (submitted == null) return const SizedBox.shrink();
+        return AiSummaryWidget(
+          checkinId: submitted.id,
+          quarter: quarter,
+          initialSummary: submitted.aiSummary,
+        );
+      },
+    );
+  }
 }

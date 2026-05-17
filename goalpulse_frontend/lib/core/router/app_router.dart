@@ -20,6 +20,13 @@ import '../../features/employee/checkins/progress_history_page.dart';
 import '../../features/manager/checkins/team_checkins_page.dart';
 import '../../features/manager/checkins/checkin_detail_page.dart';
 import '../../features/manager/shared_goals/shared_goals_page.dart';
+import '../../features/admin/users/user_management_page.dart';
+import '../../features/admin/cycle/cycle_management_page.dart';
+import '../../features/admin/audit/audit_log_page.dart';
+import '../../features/admin/goal_unlock/goal_unlock_page.dart';
+import '../../features/admin/analytics/org_analytics_page.dart';
+import '../../features/admin/reports/reports_page.dart';
+import '../../features/manager/analytics/team_analytics_page.dart';
 
 // ── Router provider ───────────────────────────────────────────────────────
 
@@ -113,8 +120,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/manager/analytics',
         name: 'manager-analytics',
-        builder: (_, __) => const PlaceholderPage(
-            title: 'Analytics', role: UserRole.manager),
+        builder: (_, __) => const TeamAnalyticsPage(),
       ),
 
       // ── Admin routes ───────────────────────────────────────────────────
@@ -127,14 +133,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/admin/users',
         name: 'admin-users',
-        builder: (_, __) => const PlaceholderPage(
-            title: 'Users', role: UserRole.admin),
+        builder: (_, __) => const UserManagementPage(),
       ),
       GoRoute(
         path: '/admin/cycles',
         name: 'admin-cycles',
-        builder: (_, __) => const PlaceholderPage(
-            title: 'Cycles', role: UserRole.admin),
+        builder: (_, __) => const CycleManagementPage(),
       ),
       GoRoute(
         path: '/admin/shared-goals',
@@ -151,26 +155,22 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/admin/audit-log',
         name: 'admin-audit-log',
-        builder: (_, __) => const PlaceholderPage(
-            title: 'Audit Log', role: UserRole.admin),
+        builder: (_, __) => const AuditLogPage(),
       ),
       GoRoute(
         path: '/admin/analytics',
         name: 'admin-analytics',
-        builder: (_, __) => const PlaceholderPage(
-            title: 'Analytics', role: UserRole.admin),
+        builder: (_, __) => const OrgAnalyticsPage(),
       ),
       GoRoute(
         path: '/admin/reports',
         name: 'admin-reports',
-        builder: (_, __) => const PlaceholderPage(
-            title: 'Reports', role: UserRole.admin),
+        builder: (_, __) => const ReportsPage(),
       ),
       GoRoute(
         path: '/admin/goal-unlock',
         name: 'admin-goal-unlock',
-        builder: (_, __) => const PlaceholderPage(
-            title: 'Goal Unlock', role: UserRole.admin),
+        builder: (_, __) => const GoalUnlockPage(),
       ),
     ],
   );

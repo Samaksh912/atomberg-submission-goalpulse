@@ -1,17 +1,22 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/constants.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../features/ai/ai_provider.dart';
 import '../../../../widgets/confirm_dialog.dart';
 import '../goals_provider.dart';
+import 'ai_suggestion_drawer.dart';
 import 'uom_selector_widget.dart';
 
 /// Expandable card for a single goal inside the goal builder.
 ///
 /// Shows a compact header when collapsed and a full form when expanded.
-class GoalCardWidget extends StatefulWidget {
+class GoalCardWidget extends ConsumerStatefulWidget {
   const GoalCardWidget({
     super.key,
     required this.index,
@@ -20,6 +25,7 @@ class GoalCardWidget extends StatefulWidget {
     required this.onDelete,
     this.isReadOnly = false,
     this.onSharedWeightageChanged,
+    this.allDrafts = const [],
   });
 
   final int index;
@@ -27,18 +33,24 @@ class GoalCardWidget extends StatefulWidget {
   final ValueChanged<GoalItemDraft> onChanged;
   final VoidCallback onDelete;
   final bool isReadOnly;
+  final List<GoalItemDraft> allDrafts;
   /// Called when a shared goal's weightage is changed, to persist to API.
   final void Function(String sharedGoalId, double weightage)? onSharedWeightageChanged;
 
   @override
-  State<GoalCardWidget> createState() => _GoalCardWidgetState();
+  ConsumerState<GoalCardWidget> createState() => _GoalCardWidgetState();
 }
 
-class _GoalCardWidgetState extends State<GoalCardWidget> {
+class _GoalCardWidgetState extends ConsumerState<GoalCardWidget> {
   bool _expanded = false;
   late TextEditingController _titleCtrl;
   late TextEditingController _descCtrl;
   late TextEditingController _targetCtrl;
+
+  // KPI recommendation hint.
+  KpiRecommendation? _kpiHint;
+  Timer? _kpiTimer;
+  bool _kpiHintDismissed = false;
 
   @override
   void initState() {
@@ -69,11 +81,36 @@ class _GoalCardWidgetState extends State<GoalCardWidget> {
 
   @override
   void dispose() {
+    _kpiTimer?.cancel();
     _titleCtrl.dispose();
     _descCtrl.dispose();
     _targetCtrl.dispose();
     super.dispose();
   }
+
+  void _onTitleChanged(String val) {
+    _emit(widget.draft.copyWith(title: val));
+    if (val.length < 6 || widget.draft.thrustArea.isEmpty) return;
+    _kpiTimer?.cancel();
+    _kpiTimer = Timer(const Duration(milliseconds: 500), _fetchKpiHint);
+  }
+
+  Future<void> _fetchKpiHint() async {
+    if (!mounted) return;
+    final d = widget.draft;
+    setState(() {
+      _kpiHint = null;
+      _kpiHintDismissed = false;
+    });
+    final hint = await ref.read(aiApiProvider).recommendKpi(
+          thrustArea: d.thrustArea,
+          goalTitle: d.title,
+          role: 'Employee',
+        );
+    if (!mounted) return;
+    setState(() => _kpiHint = hint);
+  }
+
 
   void _emit(GoalItemDraft updated) => widget.onChanged(updated);
 
@@ -336,7 +373,7 @@ class _GoalCardWidgetState extends State<GoalCardWidget> {
               counterText: '${_titleCtrl.text.length}/100',
             ),
             style: GoogleFonts.inter(fontSize: 14),
-            onChanged: (val) => _emit(d.copyWith(title: val)),
+            onChanged: readOnly ? null : _onTitleChanged,
           ),
           const SizedBox(height: 14),
 
@@ -361,9 +398,29 @@ class _GoalCardWidgetState extends State<GoalCardWidget> {
                 ? (_) {}
                 : (val) => _emit(d.copyWith(uomType: val)),
           ),
+          // ── KPI AI hint ───────────────────────────────────────────
+          if (_kpiHint != null && !_kpiHintDismissed && !readOnly) ...[
+            const SizedBox(height: 8),
+            _KpiHintBanner(
+              hint: _kpiHint!,
+              onApply: () {
+                final h = _kpiHint!;
+                _targetCtrl.text = h.targetSuggestion;
+                _emit(d.copyWith(
+                  uomType: h.uomType,
+                  target: double.tryParse(h.targetSuggestion) ??
+                      h.targetSuggestion,
+                ));
+                setState(() {
+                  _kpiHint = null;
+                  _kpiHintDismissed = true;
+                });
+              },
+              onDismiss: () => setState(() => _kpiHintDismissed = true),
+            ),
+          ],
           const SizedBox(height: 14),
 
-          // ── Target ────────────────────────────────────────────────
           if (d.uomType == 'zero')
             TextFormField(
               readOnly: true,
@@ -497,23 +554,43 @@ class _GoalCardWidgetState extends State<GoalCardWidget> {
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('✨ AI Suggestions coming soon!'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.auto_awesome, size: 18),
-                label: const Text('AI Suggest'),
+                onPressed: widget.draft.thrustArea.isEmpty
+                    ? null
+                    : () => AiSuggestionDrawer.show(
+                          context,
+                          thrustArea: widget.draft.thrustArea,
+                          existingTitles: widget.allDrafts
+                              .map((d) => d.title)
+                              .where((t) => t.isNotEmpty)
+                              .toList(),
+                          onApply: (suggestion) {
+                            _titleCtrl.text = suggestion.title;
+                            _targetCtrl.text = suggestion.recommendedTarget;
+                            _emit(widget.draft.copyWith(
+                              title: suggestion.title,
+                              description: suggestion.description,
+                              uomType: suggestion.uomType,
+                              target: double.tryParse(
+                                      suggestion.recommendedTarget) ??
+                                  suggestion.recommendedTarget,
+                            ));
+                          },
+                        ),
+                icon: const Icon(Icons.auto_awesome_rounded, size: 16),
+                label: Text(
+                  widget.draft.thrustArea.isEmpty
+                      ? 'Select Thrust Area first'
+                      : '✨ AI Suggest Goals',
+                ),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.kBrandSecondary,
-                  side: BorderSide(
-                      color: AppColors.kBrandSecondary.withValues(alpha: 0.4)),
+                  foregroundColor: const Color(0xFF7C3AED),
+                  side: const BorderSide(
+                      color: Color(0xFF7C3AED), width: 1.2),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10)),
+                  textStyle: GoogleFonts.inter(
+                      fontSize: 13, fontWeight: FontWeight.w600),
                 ),
               ),
             ),
@@ -538,4 +615,97 @@ class _GoalCardWidgetState extends State<GoalCardWidget> {
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       );
+}
+
+// ── KPI Hint Banner ───────────────────────────────────────────────────────────
+
+class _KpiHintBanner extends StatelessWidget {
+  const _KpiHintBanner({
+    required this.hint,
+    required this.onApply,
+    required this.onDismiss,
+  });
+
+  final KpiRecommendation hint;
+  final VoidCallback onApply;
+  final VoidCallback onDismiss;
+
+  String get _uomLabel => switch (hint.uomType) {
+        'numeric_max' => '↑ Numeric',
+        'numeric_min' => '↓ Numeric',
+        'percent_max' => '↑ %',
+        'percent_min' => '↓ %',
+        'timeline' => 'Timeline',
+        'zero' => 'Zero',
+        _ => hint.uomType,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF4F46E5).withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+            color: const Color(0xFF4F46E5).withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.auto_awesome_rounded,
+              size: 14, color: Color(0xFF7C3AED)),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '💡 AI suggests: $_uomLabel · Target ≈ ${hint.targetSuggestion}',
+                  style: GoogleFonts.inter(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF4F46E5)),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  hint.rationale,
+                  style: GoogleFonts.inter(
+                      fontSize: 11,
+                      color: AppColors.kTextSecondary,
+                      fontStyle: FontStyle.italic),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          TextButton(
+            onPressed: onApply,
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFF4F46E5),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              textStyle:
+                  GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: const Text('Apply'),
+          ),
+          TextButton(
+            onPressed: onDismiss,
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.kTextSecondary,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+              textStyle: GoogleFonts.inter(fontSize: 11),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: const Text('Dismiss'),
+          ),
+        ],
+      ),
+    );
+  }
 }

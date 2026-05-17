@@ -7,6 +7,7 @@ from config import settings
 
 # ── Router imports ────────────────────────────────────────────────────────
 from app.routers import admin, ai, analytics, auth, checkins, goals, shared_goals
+from app.routers.admin import goals_router as admin_goals_router
 
 # ── Application ───────────────────────────────────────────────────────────
 app = FastAPI(
@@ -36,6 +37,7 @@ async def health_check():
 # ── Register routers ─────────────────────────────────────────────────────
 app.include_router(auth.router)
 app.include_router(goals.router)
+app.include_router(admin_goals_router)
 app.include_router(checkins.router)
 app.include_router(shared_goals.router)
 app.include_router(analytics.router)

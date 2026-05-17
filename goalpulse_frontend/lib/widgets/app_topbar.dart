@@ -5,15 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../core/theme/app_colors.dart';
 import '../features/auth/auth_provider.dart';
+import '../features/shared/notifications_provider.dart';
 import 'app_sidebar.dart';
-
-// ── Notifications provider (stub — will be backed by Firestore later) ────
-
-final notificationsProvider = StateProvider<List<Map<String, String>>>((ref) => [
-      {'title': 'Q1 Check-in Reminder', 'body': 'Submit your Q1 actuals before March 31.', 'time': '2h ago'},
-      {'title': 'Goal Approved', 'body': 'Your manager approved "Increase NPS"', 'time': '5h ago'},
-      {'title': 'New Shared Goal', 'body': 'A shared goal has been assigned to your team.', 'time': '1d ago'},
-    ]);
 
 /// Top bar displayed above the content area in the app shell.
 class AppTopBar extends ConsumerWidget {
@@ -23,22 +16,26 @@ class AppTopBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final notifications = ref.watch(notificationsProvider);
-    final unread = notifications.length;
+    final unread = ref.watch(unreadCountProvider);
     final profile = ref.watch(currentUserProfileProvider);
-    final displayName = profile.valueOrNull?['displayName'] as String? ?? 'User';
-    final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U';
+    final displayName =
+        profile.valueOrNull?['displayName'] as String? ?? 'User';
+    final email = profile.valueOrNull?['email'] as String? ?? '';
+    final initial =
+        displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U';
+    final isDemo = email.endsWith('@demo.com');
 
     return Container(
       height: 60,
       decoration: const BoxDecoration(
         color: AppColors.kCardBackground,
-        border: Border(bottom: BorderSide(color: AppColors.kBorder, width: 1)),
+        border:
+            Border(bottom: BorderSide(color: AppColors.kBorder, width: 1)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          // ── Menu toggle ────────────────────────────────────────────────
+          // ── Menu toggle ──────────────────────────────────────────────
           IconButton(
             icon: const Icon(Icons.menu_rounded, size: 22),
             color: AppColors.kTextSecondary,
@@ -50,7 +47,7 @@ class AppTopBar extends ConsumerWidget {
           ),
           const SizedBox(width: 8),
 
-          // ── Page title ─────────────────────────────────────────────────
+          // ── Page title ───────────────────────────────────────────────
           Text(
             pageTitle,
             style: GoogleFonts.inter(
@@ -62,9 +59,42 @@ class AppTopBar extends ConsumerWidget {
 
           const Spacer(),
 
-          // ── Cycle phase chip ───────────────────────────────────────────
+          // ── Demo Mode chip ───────────────────────────────────────────
+          if (isDemo) ...[
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.kWarning.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                    color: AppColors.kWarning.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.science_rounded,
+                      size: 13, color: AppColors.kWarning),
+                  const SizedBox(width: 4),
+                  Text(
+                    'DEMO MODE',
+                    style: GoogleFonts.inter(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.8,
+                      color: AppColors.kWarning,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+          ],
+
+          // ── Cycle phase chip ─────────────────────────────────────────
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             decoration: BoxDecoration(
               color: AppColors.kSuccess.withAlpha(20),
               borderRadius: BorderRadius.circular(999),
@@ -73,7 +103,8 @@ class AppTopBar extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 7, height: 7,
+                  width: 7,
+                  height: 7,
                   decoration: const BoxDecoration(
                     color: AppColors.kSuccess,
                     shape: BoxShape.circle,
@@ -94,10 +125,10 @@ class AppTopBar extends ConsumerWidget {
 
           const Spacer(),
 
-          // ── Notification bell ──────────────────────────────────────────
+          // ── Notification bell ────────────────────────────────────────
           _NotificationBell(unreadCount: unread),
 
-          // ── Divider ────────────────────────────────────────────────────
+          // ── Divider ──────────────────────────────────────────────────
           Container(
             height: 28,
             width: 1,
@@ -105,7 +136,7 @@ class AppTopBar extends ConsumerWidget {
             color: AppColors.kBorder,
           ),
 
-          // ── User avatar + dropdown ─────────────────────────────────────
+          // ── User avatar + dropdown ───────────────────────────────────
           _UserDropdown(initial: initial, displayName: displayName),
         ],
       ),
@@ -171,9 +202,27 @@ class _NotificationPanel extends ConsumerWidget {
   const _NotificationPanel({required this.onClose});
   final VoidCallback onClose;
 
+  IconData _iconForType(String type) => switch (type) {
+        'approval' => Icons.check_circle_rounded,
+        'return' => Icons.undo_rounded,
+        'shared' => Icons.share_rounded,
+        'checkin' => Icons.fact_check_outlined,
+        'unlock' => Icons.lock_open_rounded,
+        _ => Icons.notifications_outlined,
+      };
+
+  Color _colorForType(String type) => switch (type) {
+        'approval' => AppColors.kSuccess,
+        'return' => AppColors.kWarning,
+        'shared' => AppColors.kInfo,
+        'checkin' => AppColors.kBrandPrimary,
+        'unlock' => AppColors.kBrandSecondary,
+        _ => AppColors.kTextSecondary,
+      };
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final notifications = ref.watch(notificationsProvider);
+    final notifsAsync = ref.watch(notificationsStreamProvider);
 
     return Stack(
       children: [
@@ -210,15 +259,15 @@ class _NotificationPanel extends ConsumerWidget {
                                 color: AppColors.kTextPrimary)),
                         const Spacer(),
                         TextButton(
-                          onPressed: () {
-                            ref.read(notificationsProvider.notifier).state = [];
-                            onClose();
+                          onPressed: () async {
+                            await markAllRead();
                           },
                           child: Text('Mark all read',
                               style: GoogleFonts.inter(fontSize: 12)),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.close_rounded, size: 18),
+                          icon:
+                              const Icon(Icons.close_rounded, size: 18),
                           onPressed: onClose,
                         ),
                       ],
@@ -227,57 +276,97 @@ class _NotificationPanel extends ConsumerWidget {
                   const Divider(height: 1),
                   // List
                   Expanded(
-                    child: notifications.isEmpty
-                        ? Center(
-                            child: Text('No new notifications',
-                                style: GoogleFonts.inter(
-                                    fontSize: 13,
-                                    color: AppColors.kTextSecondary)),
-                          )
-                        : ListView.separated(
-                            padding: const EdgeInsets.all(0),
-                            itemCount: notifications.length,
-                            separatorBuilder: (_, __) =>
-                                const Divider(height: 1),
-                            itemBuilder: (_, i) {
-                              final n = notifications[i];
-                              return ListTile(
-                                contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 20, vertical: 8),
-                                leading: Container(
-                                  width: 36, height: 36,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.kBrandPrimary.withAlpha(20),
-                                    borderRadius: BorderRadius.circular(8),
+                    child: notifsAsync.when(
+                      loading: () => const Center(
+                          child: CircularProgressIndicator()),
+                      error: (_, __) => Center(
+                        child: Text('Could not load notifications',
+                            style: GoogleFonts.inter(
+                                fontSize: 13,
+                                color: AppColors.kTextSecondary)),
+                      ),
+                      data: (notifs) => notifs.isEmpty
+                          ? Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.notifications_none_rounded,
+                                      size: 40,
+                                      color: AppColors.kTextSecondary
+                                          .withValues(alpha: 0.4)),
+                                  const SizedBox(height: 8),
+                                  Text('No notifications yet',
+                                      style: GoogleFonts.inter(
+                                          fontSize: 13,
+                                          color:
+                                              AppColors.kTextSecondary)),
+                                ],
+                              ),
+                            )
+                          : ListView.separated(
+                              padding: EdgeInsets.zero,
+                              itemCount: notifs.length,
+                              separatorBuilder: (_, __) =>
+                                  const Divider(height: 1),
+                              itemBuilder: (_, i) {
+                                final n = notifs[i];
+                                final typeColor = _colorForType(n.type);
+                                return Container(
+                                  color: n.isRead
+                                      ? null
+                                      : AppColors.kBrandPrimary
+                                          .withValues(alpha: 0.04),
+                                  child: ListTile(
+                                    contentPadding:
+                                        const EdgeInsets.symmetric(
+                                            horizontal: 20, vertical: 8),
+                                    leading: Container(
+                                      width: 36,
+                                      height: 36,
+                                      decoration: BoxDecoration(
+                                        color: typeColor
+                                            .withValues(alpha: 0.12),
+                                        borderRadius:
+                                            BorderRadius.circular(8),
+                                      ),
+                                      child: Icon(
+                                          _iconForType(n.type),
+                                          size: 18,
+                                          color: typeColor),
+                                    ),
+                                    title: Text(n.title,
+                                        style: GoogleFonts.inter(
+                                          fontSize: 13,
+                                          fontWeight: n.isRead
+                                              ? FontWeight.w400
+                                              : FontWeight.w700,
+                                          color: AppColors.kTextPrimary,
+                                        )),
+                                    subtitle: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const SizedBox(height: 2),
+                                        Text(n.body,
+                                            style: GoogleFonts.inter(
+                                                fontSize: 12,
+                                                color: AppColors
+                                                    .kTextSecondary)),
+                                        const SizedBox(height: 4),
+                                        Text(n.timeAgo,
+                                            style: GoogleFonts.inter(
+                                                fontSize: 11,
+                                                color: AppColors
+                                                    .kTextSecondary
+                                                    .withValues(
+                                                        alpha: 0.6))),
+                                      ],
+                                    ),
                                   ),
-                                  child: const Icon(
-                                      Icons.notifications_outlined,
-                                      size: 18,
-                                      color: AppColors.kBrandPrimary),
-                                ),
-                                title: Text(n['title'] ?? '',
-                                    style: GoogleFonts.inter(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600)),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const SizedBox(height: 2),
-                                    Text(n['body'] ?? '',
-                                        style: GoogleFonts.inter(
-                                            fontSize: 12,
-                                            color: AppColors.kTextSecondary)),
-                                    const SizedBox(height: 4),
-                                    Text(n['time'] ?? '',
-                                        style: GoogleFonts.inter(
-                                            fontSize: 11,
-                                            color: AppColors.kTextSecondary
-                                                .withAlpha(160))),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
+                                );
+                              },
+                            ),
+                    ),
                   ),
                 ],
               ),
@@ -304,7 +393,8 @@ class _UserDropdown extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return PopupMenuButton<String>(
       offset: const Offset(0, 48),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       onSelected: (value) async {
         if (value == 'logout') {
           await ref.read(authServiceProvider).signOut();
@@ -317,8 +407,8 @@ class _UserDropdown extends ConsumerWidget {
           enabled: false,
           child: Row(
             children: [
-              const Icon(Icons.person_outlined, size: 18,
-                  color: AppColors.kTextSecondary),
+              const Icon(Icons.person_outlined,
+                  size: 18, color: AppColors.kTextSecondary),
               const SizedBox(width: 10),
               Text('Profile', style: GoogleFonts.inter(fontSize: 13)),
               const Spacer(),
@@ -333,8 +423,8 @@ class _UserDropdown extends ConsumerWidget {
           enabled: false,
           child: Row(
             children: [
-              const Icon(Icons.settings_outlined, size: 18,
-                  color: AppColors.kTextSecondary),
+              const Icon(Icons.settings_outlined,
+                  size: 18, color: AppColors.kTextSecondary),
               const SizedBox(width: 10),
               Text('Settings', style: GoogleFonts.inter(fontSize: 13)),
               const Spacer(),
@@ -349,8 +439,8 @@ class _UserDropdown extends ConsumerWidget {
           value: 'logout',
           child: Row(
             children: [
-              const Icon(Icons.logout_rounded, size: 18,
-                  color: AppColors.kDanger),
+              const Icon(Icons.logout_rounded,
+                  size: 18, color: AppColors.kDanger),
               const SizedBox(width: 10),
               Text('Logout',
                   style: GoogleFonts.inter(

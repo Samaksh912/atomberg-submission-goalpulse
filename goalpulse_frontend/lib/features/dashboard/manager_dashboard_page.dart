@@ -8,6 +8,7 @@ import '../../core/theme/app_colors.dart';
 import '../../widgets/app_shell.dart';
 import '../../widgets/kpi_card.dart';
 import '../manager/approvals/approvals_provider.dart';
+import '../manager/dashboard/widgets/ai_risk_alerts_widget.dart';
 
 /// Manager dashboard — real KPI cards + pending approvals + team activity.
 class ManagerDashboardPage extends ConsumerWidget {
@@ -98,6 +99,10 @@ class ManagerDashboardPage extends ConsumerWidget {
                 ],
               );
             }),
+            const SizedBox(height: 16),
+
+            // ── Row 1.5: AI Risk Alerts ───────────────────────────
+            const AiRiskAlertsWidget(),
             const SizedBox(height: 24),
 
             // ── Row 2: Cards ────────────────────────────────────────

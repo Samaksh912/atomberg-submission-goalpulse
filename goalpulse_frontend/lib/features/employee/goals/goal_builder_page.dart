@@ -8,6 +8,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../widgets/app_shell.dart';
 import '../../../widgets/confirm_dialog.dart';
 import '../../../widgets/toast_notification.dart';
+import '../../../widgets/loading_skeleton.dart';
 import 'goals_provider.dart';
 import 'widgets/goal_card_widget.dart';
 import 'widgets/weightage_meter_widget.dart';
@@ -151,7 +152,10 @@ class _GoalBuilderPageState extends ConsumerState<GoalBuilderPage> {
       pageTitle: 'My Goals',
       role: UserRole.employee,
       child: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Padding(
+              padding: EdgeInsets.all(24),
+              child: LoadingSkeletonCard(),
+            )
           : Column(
               children: [
                 // ── Returned banner ────────────────────────────────

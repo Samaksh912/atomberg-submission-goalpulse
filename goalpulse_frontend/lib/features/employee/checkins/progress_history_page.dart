@@ -1,4 +1,3 @@
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -7,9 +6,11 @@ import '../../../core/constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../models/checkin_model.dart';
 import '../../../widgets/app_shell.dart';
+import '../../../widgets/chart_widgets.dart';
 import '../../../widgets/empty_state_widget.dart';
 import '../goals/goals_provider.dart';
 import 'checkin_provider.dart';
+import 'widgets/ai_summary_widget.dart';
 
 /// Read-only progress history page showing past check-ins.
 class ProgressHistoryPage extends ConsumerStatefulWidget {
@@ -125,22 +126,22 @@ class _ProgressHistoryPageState extends ConsumerState<ProgressHistoryPage> {
                               if (checkin.managerComment != null)
                                 _buildManagerComment(checkin),
 
-                              // AI summary.
-                              if (checkin.aiSummary != null) ...[
-                                const SizedBox(height: 16),
-                                _buildAiSummary(checkin),
-                              ],
+                              // AI Summary (always shown after submission).
+                              const SizedBox(height: 16),
+                              AiSummaryWidget(
+                                checkinId: checkin.id,
+                                quarter: checkin.quarter,
+                                initialSummary: checkin.aiSummary,
+                              ),
 
                               const SizedBox(height: 20),
 
-                              // Chart.
-                              Text('Planned vs Actual',
-                                  style: GoogleFonts.inter(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.kTextPrimary)),
-                              const SizedBox(height: 12),
-                              _buildChart(checkin),
+                              // Per-goal bar chart.
+                              _buildBarChart(checkin),
+                              const SizedBox(height: 20),
+
+                              // QoQ line chart (if multi-quarter data).
+                              _buildQoQChart(),
                             ],
                           ),
                         ),
@@ -327,159 +328,43 @@ class _ProgressHistoryPageState extends ConsumerState<ProgressHistoryPage> {
     );
   }
 
-  Widget _buildAiSummary(CheckinRecord c) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.kBrandSecondary.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-            color: AppColors.kBrandSecondary.withValues(alpha: 0.2)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.auto_awesome,
-                  size: 16, color: AppColors.kBrandSecondary),
-              const SizedBox(width: 8),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppColors.kBrandSecondary.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text('AI',
-                    style: GoogleFonts.inter(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.kBrandSecondary)),
-              ),
-              const SizedBox(width: 8),
-              Text('AI Summary',
-                  style: GoogleFonts.inter(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.kBrandSecondary)),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(c.aiSummary!,
-              style: GoogleFonts.inter(
-                  fontSize: 13, color: AppColors.kTextPrimary)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildChart(CheckinRecord c) {
+  /// Grouped bar chart: target score (100%) vs actual progress score per goal.
+  Widget _buildBarChart(CheckinRecord c) {
     final actuals = c.actuals;
     if (actuals.isEmpty) return const SizedBox.shrink();
 
-    return Container(
-      height: 220,
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.kCardBackground,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.kBorder.withValues(alpha: 0.5)),
-      ),
-      child: BarChart(
-        BarChartData(
-          alignment: BarChartAlignment.spaceAround,
-          maxY: 110,
-          barTouchData: BarTouchData(enabled: true),
-          titlesData: FlTitlesData(
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 36,
-                getTitlesWidget: (value, meta) {
-                  final idx = value.toInt();
-                  if (idx < 0 || idx >= actuals.length) {
-                    return const SizedBox.shrink();
-                  }
-                  return SideTitleWidget(
-                    axisSide: meta.axisSide,
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 50),
-                      child: Text(
-                        actuals[idx].goalTitle,
-                        style: GoogleFonts.inter(fontSize: 9),
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 2,
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            leftTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 32,
-                getTitlesWidget: (value, meta) => Text(
-                  '${value.toInt()}%',
-                  style: GoogleFonts.inter(
-                      fontSize: 10, color: AppColors.kTextSecondary),
-                ),
-                interval: 25,
-              ),
-            ),
-            rightTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false)),
-            topTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false)),
-          ),
-          gridData: FlGridData(
-            show: true,
-            drawVerticalLine: false,
-            horizontalInterval: 25,
-            getDrawingHorizontalLine: (v) => FlLine(
-              color: AppColors.kBorder.withValues(alpha: 0.3),
-              strokeWidth: 1,
-            ),
-          ),
-          borderData: FlBorderData(show: false),
-          barGroups: List.generate(actuals.length, (i) {
-            final a = actuals[i];
-            final targetVal = _toDouble(a.target);
-            final actualVal = a.progressScore;
-            return BarChartGroupData(
-              x: i,
-              barRods: [
-                BarChartRodData(
-                  toY: targetVal.clamp(0, 100),
-                  color: AppColors.kBrandPrimary.withValues(alpha: 0.3),
-                  width: 12,
-                  borderRadius: BorderRadius.circular(3),
-                ),
-                BarChartRodData(
-                  toY: actualVal.clamp(0, 100),
-                  color: actualVal >= 80
-                      ? AppColors.kSuccess
-                      : actualVal >= 50
-                          ? AppColors.kWarning
-                          : AppColors.kDanger,
-                  width: 12,
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ],
-            );
-          }),
-        ),
-      ),
+    final labels = actuals.map((a) {
+      final t = a.goalTitle;
+      return t.length > 14 ? '${t.substring(0, 12)}…' : t;
+    }).toList();
+
+    return GoalPulseBarChart(
+      title: 'Planned (100%) vs Actual — $_quarter',
+      labels: labels,
+      plannedValues: List.filled(actuals.length, 100.0),
+      actualValues: actuals.map((a) => a.progressScore.clamp(0.0, 100.0)).toList(),
     );
   }
 
-  double _toDouble(dynamic v) {
-    if (v is num) return v.toDouble();
-    if (v is String) return double.tryParse(v) ?? 0;
-    return 0;
+  /// Line chart showing my average score across all submitted quarters.
+  Widget _buildQoQChart() {
+    const quarters = ['Q1', 'Q2', 'Q3', 'Q4'];
+    final scores = quarters.map((q) {
+      final ci = _checkins.where((c) => c.quarter == q).firstOrNull;
+      if (ci == null || ci.actuals.isEmpty) return 0.0;
+      final sum = ci.actuals.fold(0.0, (acc, a) => acc + a.progressScore);
+      return (sum / ci.actuals.length).clamp(0.0, 100.0);
+    }).toList();
+
+    // Only show if there's at least one non-zero data point.
+    if (scores.every((s) => s == 0)) return const SizedBox.shrink();
+
+    return GoalPulseLineChart(
+      title: 'My QoQ Progress Trend',
+      labels: quarters,
+      series: [scores],
+      seriesLabels: const ['Avg Score'],
+      seriesColors: const [AppColors.kBrandPrimary],
+    );
   }
 }
