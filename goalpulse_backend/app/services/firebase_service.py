@@ -23,13 +23,18 @@ def _init_firebase() -> None:
 
     raw_val = settings.firebase_service_account_json
     if raw_val:
-        try:
-            # Try as raw JSON first.
-            service_account_info = json.loads(raw_val)
-        except json.JSONDecodeError:
-            # Fallback to base64.
-            service_account_info = json.loads(base64.b64decode(raw_val))
-        cred = credentials.Certificate(service_account_info)
+        import os
+        if raw_val.endswith('.json') and os.path.exists(raw_val):
+            # Hackathon shortcut: just use the file directly!
+            cred = credentials.Certificate(raw_val)
+        else:
+            try:
+                # Try as raw JSON first.
+                service_account_info = json.loads(raw_val)
+            except json.JSONDecodeError:
+                # Fallback to base64.
+                service_account_info = json.loads(base64.b64decode(raw_val))
+            cred = credentials.Certificate(service_account_info)
     else:
         cred = credentials.ApplicationDefault()
 

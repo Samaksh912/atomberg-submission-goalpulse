@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config.dart';
+import 'mock_api_interceptor.dart';
 
 /// Thin wrapper around [Dio] pre-configured for the GoalPulse API.
 class ApiClient {
@@ -17,6 +18,9 @@ class ApiClient {
         },
       ),
     );
+
+    // INJECT THE HACKATHON MOCK INTERCEPTOR
+    _dio.interceptors.add(MockApiInterceptor());
 
     _dio.interceptors.add(
       InterceptorsWrapper(

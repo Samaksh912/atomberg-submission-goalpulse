@@ -50,14 +50,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 
   String _friendlyError(String code) => switch (code) {
-        'user-not-found' => 'No account found with this email.',
-        'wrong-password' || 'invalid-credential' =>
-          'Incorrect email or password.',
-        'too-many-requests' =>
-          'Too many attempts. Please try again later.',
-        'user-disabled' => 'This account has been disabled.',
-        _ => 'Sign in failed. Please try again.',
-      };
+    'user-not-found' => 'No account found with this email.',
+    'wrong-password' || 'invalid-credential' => 'Incorrect email or password.',
+    'too-many-requests' => 'Too many attempts. Please try again later.',
+    'user-disabled' => 'This account has been disabled.',
+    _ => 'Sign in failed. Please try again.',
+  };
 
   // ── Build ─────────────────────────────────────────────────────────────────
 
@@ -126,8 +124,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               color: Colors.white.withAlpha(40),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.gps_fixed_rounded,
-                size: 52, color: Colors.white),
+            child: const Icon(
+              Icons.gps_fixed_rounded,
+              size: 52,
+              color: Colors.white,
+            ),
           ),
           const SizedBox(height: 32),
           Text(
@@ -160,9 +161,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 width: i == 0 ? 24 : 8,
                 height: 8,
                 decoration: BoxDecoration(
-                  color: i == 0
-                      ? Colors.white
-                      : Colors.white.withAlpha(100),
+                  color: i == 0 ? Colors.white : Colors.white.withAlpha(100),
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -223,12 +222,16 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               keyboardType: TextInputType.emailAddress,
               decoration: const InputDecoration(
                 hintText: 'you@company.com',
-                prefixIcon: Icon(Icons.person_outline_rounded,
-                    color: AppColors.kTextSecondary),
+                prefixIcon: Icon(
+                  Icons.person_outline_rounded,
+                  color: AppColors.kTextSecondary,
+                ),
               ),
-              validator: (v) => (v == null || !v.contains('@'))
-                  ? 'Enter a valid email'
-                  : null,
+              validator:
+                  (v) =>
+                      (v == null || !v.contains('@'))
+                          ? 'Enter a valid email'
+                          : null,
             ),
             const SizedBox(height: 20),
 
@@ -241,8 +244,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               obscureText: _obscurePassword,
               decoration: InputDecoration(
                 hintText: '••••••••',
-                prefixIcon: const Icon(Icons.lock_outline_rounded,
-                    color: AppColors.kTextSecondary),
+                prefixIcon: const Icon(
+                  Icons.lock_outline_rounded,
+                  color: AppColors.kTextSecondary,
+                ),
                 suffixIcon: IconButton(
                   tooltip: _obscurePassword ? 'Show password' : 'Hide password',
                   icon: Icon(
@@ -251,21 +256,24 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         : Icons.visibility_off_outlined,
                     color: AppColors.kTextSecondary,
                   ),
-                  onPressed: () =>
-                      setState(() => _obscurePassword = !_obscurePassword),
+                  onPressed:
+                      () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
                 ),
               ),
-              validator: (v) =>
-                  (v == null || v.length < 6) ? 'Enter your password' : null,
+              validator:
+                  (v) =>
+                      (v == null || v.length < 6)
+                          ? 'Enter your password'
+                          : null,
             ),
 
             // ── Forgot password ───────────────────────────────────────────────
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
-                onPressed: _isLoading
-                    ? null
-                    : () => context.push('/forgot-password'),
+                onPressed:
+                    _isLoading ? null : () => context.push('/forgot-password'),
                 child: const Text('Forgot password?'),
               ),
             ),
@@ -276,16 +284,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               height: 48,
               child: ElevatedButton(
                 onPressed: _isLoading ? null : _signIn,
-                child: _isLoading
-                    ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Text('Sign In'),
+                child:
+                    _isLoading
+                        ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: Colors.white,
+                          ),
+                        )
+                        : const Text('Sign In'),
               ),
             ),
 
@@ -295,17 +304,21 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 10),
+                  horizontal: 14,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.kDanger.withAlpha(20),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                      color: AppColors.kDanger.withAlpha(60)),
+                  border: Border.all(color: AppColors.kDanger.withAlpha(60)),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.error_outline_rounded,
-                        color: AppColors.kDanger, size: 18),
+                    const Icon(
+                      Icons.error_outline_rounded,
+                      color: AppColors.kDanger,
+                      size: 18,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -328,10 +341,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 const Expanded(child: Divider()),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Text('or',
-                      style: GoogleFonts.inter(
-                          fontSize: 13,
-                          color: AppColors.kTextSecondary)),
+                  child: Text(
+                    'or',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      color: AppColors.kTextSecondary,
+                    ),
+                  ),
                 ),
                 const Expanded(child: Divider()),
               ],
@@ -339,6 +355,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             const SizedBox(height: 24),
 
             // ── Microsoft SSO button ──────────────────────────────────────────
+            /*
             SizedBox(
               width: double.infinity,
               height: 48,
@@ -348,6 +365,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 label: const Text('Sign In with Microsoft'),
               ),
             ),
+            */
           ],
         ),
       ),
@@ -355,13 +373,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 
   Widget _buildLabel(String text) => Text(
-        text,
-        style: GoogleFonts.inter(
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
-          color: AppColors.kTextPrimary,
-        ),
-      );
+    text,
+    style: GoogleFonts.inter(
+      fontSize: 13,
+      fontWeight: FontWeight.w500,
+      color: AppColors.kTextPrimary,
+    ),
+  );
 
   void _onMicrosoftSso() {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -403,12 +421,18 @@ class _MicrosoftLogoPainter extends CustomPainter {
     // Four quadrant squares of the Microsoft logo
     final rects = [
       (Rect.fromLTWH(0, 0, w - gap / 2, h - gap / 2), const Color(0xFFF25022)),
-      (Rect.fromLTWH(w + gap / 2, 0, w - gap / 2, h - gap / 2),
-          const Color(0xFF7FBA00)),
-      (Rect.fromLTWH(0, h + gap / 2, w - gap / 2, h - gap / 2),
-          const Color(0xFF00A4EF)),
-      (Rect.fromLTWH(w + gap / 2, h + gap / 2, w - gap / 2, h - gap / 2),
-          const Color(0xFFFFB900)),
+      (
+        Rect.fromLTWH(w + gap / 2, 0, w - gap / 2, h - gap / 2),
+        const Color(0xFF7FBA00),
+      ),
+      (
+        Rect.fromLTWH(0, h + gap / 2, w - gap / 2, h - gap / 2),
+        const Color(0xFF00A4EF),
+      ),
+      (
+        Rect.fromLTWH(w + gap / 2, h + gap / 2, w - gap / 2, h - gap / 2),
+        const Color(0xFFFFB900),
+      ),
     ];
 
     for (final (rect, color) in rects) {

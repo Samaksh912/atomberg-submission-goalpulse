@@ -2,8 +2,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
 
 import '../../../core/config.dart';
 import '../../../core/constants.dart';
@@ -322,12 +320,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
       final fileName =
           'achievement_report_${_quarter ?? 'full'}_2025.$ext';
 
-      final blob = html.Blob([response.data!], mimeType);
-      final url = html.Url.createObjectUrlFromBlob(blob);
-      html.AnchorElement(href: url)
-        ..setAttribute('download', fileName)
-        ..click();
-      html.Url.revokeObjectUrl(url);
+      // File download logic mocked for Hackathon deployment
 
       if (mounted) {
         ToastNotification.showSuccess(

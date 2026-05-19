@@ -43,3 +43,16 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Backend (Python/FastAPI)
+**/venv/
+**/.venv/
+**/__pycache__/
+**/.pytest_cache/
+goalpulse_backend/fix_env*.py
+
+# Secrets and Environment Variables
+**/.env
+**/.env.*
+**/firebase-key.json
+*service_account*.json

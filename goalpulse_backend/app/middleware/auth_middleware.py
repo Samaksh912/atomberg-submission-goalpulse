@@ -46,8 +46,8 @@ async def get_current_user(
         "uid": uid,
         "email": decoded.get("email", data.get("email", "")),
         "role": data.get("role", "employee"),
-        "display_name": data.get("display_name", decoded.get("name", "")),
-        "manager_id": data.get("manager_id"),
+        "display_name": data.get("display_name", data.get("displayName", decoded.get("name", ""))),
+        "manager_id": data.get("manager_id", data.get("managerId")),
         "department": data.get("department", ""),
     }
 
